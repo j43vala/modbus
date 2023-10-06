@@ -2,12 +2,15 @@
 import minimalmodbus
 import time
 from database.models import DataRegister, Base
-from db import get_session, engine
+from db import get_sqlite_session, sqlite_engine
+from datetime import datetime
+import pytz  # Import the pytz library for time zone conversion
 
-Base.metadata.create_all(engine)
+# Base.metadata.create_all(sqlite_engine)
+Base.metadata.create_all(sqlite_engine)
 
 # Define the COM port (adjust the port name as needed, e.g., 'COM1', 'COM2', etc.)
-com_port = 'COM12'
+com_port = '/dev/ttyUSB0'
 
 # Define the Modbus slave address (typically 1 for the first device)
 slave_address = 1
@@ -16,46 +19,60 @@ slave_address = 1
 instrument = minimalmodbus.Instrument(com_port, slave_address)
 
 # Set the Modbus serial communication parameters (baudrate, parity, etc.)
-instrument.serial.baudrate = 9600 # Adjust to match your device's settings
+instrument.serial.baudrate = 9600  # Adjust to match your device's settings
 instrument.serial.bytesize = 8
 instrument.serial.parity = minimalmodbus.serial.PARITY_NONE
 instrument.serial.stopbits = 2
 
 # Define the Modbus function code and register address to read from
-function_code = 3 # Read Holding Registers
+function_code = 3  # Read Holding Registers
 register_addresses = [1, 2, 3, 4, 5]
 
 # Define the number of registers to read
-number_of_registers = len(register_addresses) # Adjust based on your requirements
+number_of_registers = len(register_addresses)  # Adjust based on your requirements
 
 # Initialize the previous data
 previous_data = None
 
+# Define the Indian Standard Time (IST) time zone
+indian_timezone = pytz.timezone('Asia/Kolkata')
+
 while True:
     try:
         # Read data from the Modbus device
-        session = get_session()
+        session = get_sqlite_session()
+        # session = get_postgres_session()
         data = instrument.read_registers(register_addresses[0], number_of_registers, functioncode=function_code)
 
         # Check if the data has changed
         if data != previous_data:
-            print(f"Updated data:")
+            print("Updated data:")
             for i in range(len(data)):
                 print(i)
-                add_reg1 = DataRegister(reg_no = register_addresses[i], value = data[i])
-                session.add(add_reg1)
-                session.commit()
+
+                # Get the current IST timestamp
+                ist_timestamp = datetime.now(indian_timezone)
+
+                data_point = DataRegister(reg_no=register_addresses[i], value=data[i], timestamp=ist_timestamp)
+                session.add(data_point)
+
+                try:
+                    session.commit()
+                    print("Data written to SQLite")
+                except Exception as e:
+                    print("Data write to SQLite failed:", e)
+
                 print(f"Read data from register {register_addresses[i]}: {data[i]}")
 
         # Update the previous data
         previous_data = data
 
         # Wait for 5 seconds before reading again
-        time.sleep(0.1)
+        time.sleep(0.0000001)
     except Exception as e:
         print(f"An error occurred: {e}")
 
     finally:
-    # Close the serial connection
+        # Close the serial connection
         instrument.serial.close()
         session.close()
