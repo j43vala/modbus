@@ -1,0 +1,14 @@
+{
+  "host": "192.168.1.18",
+  "port": 5432,
+  "user": "postgres",
+  "password": "postgres",
+  "database": "test1",
+  "schema": {
+    "id": "INT AUTO_INCREMENT PRIMARY KEY",
+    "timestamp": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+    "reg_no": "INT",
+    "value": "INT"
+  },
+  "device_name": "my_device"
+}
