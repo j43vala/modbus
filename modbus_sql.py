@@ -7,7 +7,7 @@ import pytz
 import json
 import os
 
-from database.sql_models import create_dynamic_model
+from database.models_1 import create_dynamic_model
 
 # Initialize the 'config' variable to None
 config = None

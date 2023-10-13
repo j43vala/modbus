@@ -67,7 +67,7 @@ import os
 import json
 
 # Import your dynamic model creation function here
-from database.sql_models import create_dynamic_model
+from database.models_1 import create_dynamic_model
 
 # Initialize the 'config' variable to None
 config = None
