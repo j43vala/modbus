@@ -57,6 +57,7 @@
 # except Exception as e:
 #     print("Error:", e)
 
+
 import time
 from sqlalchemy import create_engine, Column, Integer, DateTime, Float, text
 from sqlalchemy.orm import sessionmaker
@@ -66,7 +67,7 @@ from sqlalchemy.orm.exc import NoResultFound
 import os
 import json
 
-# Import your dynamic model creation function here
+# Import your dynamic model creation function from the 'database.models_1' module
 from database.models_1 import create_dynamic_model
 
 # Initialize the 'config' variable to None
@@ -75,6 +76,7 @@ config = None
 # Read configuration from JSON file
 config_file_path = '/home/wzero/modbus/w_script.json'
 
+# Check if the config file exists and load it
 if os.path.isfile(config_file_path):
     with open(config_file_path, 'r') as config_file:
         config = json.load(config_file)
@@ -82,20 +84,26 @@ else:
     print(f"Error: '{config_file_path}' not found")
     # You may want to handle this situation, such as providing default values or exiting the script.
 
+# Define paths and create SQLite database and session
 sqlite_db_path = "/home/wzero/modbus/mydatabase.db"
 sqlite_engine = create_engine(f"sqlite:///{sqlite_db_path}", echo=True)
 print("SQLite database connected successfully.")
 Sqlite_Session = sessionmaker(bind=sqlite_engine)
 sqlite_session = Sqlite_Session()
 
+# Create a PostgreSQL database connection and session
 PostgresSQL_engine = create_engine('postgresql+psycopg2://postgres:postgres@192.168.1.18:5432/test1')
 print("PostgresSQL database connected successfully.")
 Session = sessionmaker(bind=PostgresSQL_engine)
 PostgresSQL_session = Session()
 
+# Define the data transfer interval
 interval = 0.5
 
+# Create a dictionary to store dynamic table models
 tables_dict = {}
+
+# Check if the 'config' variable is defined
 if config is not None:
     com_port = config["modbus"]["port"]
     devices = config["devices"]
@@ -106,12 +114,14 @@ if config is not None:
         slave_id = device.get("slave_id", "")
         table_name = f"{hostname}_{slave_id}_{device_name}"
 
+        # Extract register information from the device configuration
         register_dict = device["register"]
         column_names = []
         for reg in register_dict:
             column_names.append(register_dict[reg])
         print(column_names)
 
+        # Create a dynamic model for the table and create the table in the PostgreSQL database
         model = create_dynamic_model(table_name, column_names)
         model.__table__.create(PostgresSQL_engine, checkfirst=True)
 
@@ -121,9 +131,8 @@ if config is not None:
             while True:
                 # Fetch data from SQLite in batches of 1000
                 batch_data = sqlite_session.query(model).limit(1000).all()
-                # print('batch_data: ', batch_data)
 
-                # Insert data into PostgresSQL using SQLAlchemy
+                # Insert data into PostgreSQL using SQLAlchemy
                 for row in batch_data:
                     try:
                         model = tables_dict[device_name]
@@ -150,6 +159,7 @@ if config is not None:
                 time.sleep(interval)
 
         except KeyboardInterrupt:
+            # Close database sessions on keyboard interrupt
             sqlite_session.close()
             PostgresSQL_session.close()
         except Exception as e:
