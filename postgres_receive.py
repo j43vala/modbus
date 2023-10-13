@@ -126,9 +126,11 @@ if config is not None:
                 # Insert data into PostgresSQL using SQLAlchemy
                 for row in batch_data:
                     try:
-                        postgres_data = tables_dict[device_name]()
+                        model = tables_dict[device_name]
+                        postgres_data = model()
                         for col_name in column_names:
                             setattr(postgres_data, col_name, getattr(row, col_name))
+                        postgres_data.timestamp = row.timestamp
                         PostgresSQL_session.add(postgres_data)
                         PostgresSQL_session.commit()
                     except IntegrityError as e:
