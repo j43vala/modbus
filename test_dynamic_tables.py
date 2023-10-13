@@ -1,4 +1,3 @@
-
 import minimalmodbus
 import time
 from db import get_sqlite_session, sqlite_engine
@@ -24,6 +23,7 @@ else:
 
 tables_dict = {}
 if config is not None:
+    print("\n\n\n\n\n\n\n\nconfig", config)
     com_port = config["modbus"]["port"]
     devices = config["devices"]
 
@@ -44,11 +44,11 @@ if config is not None:
 
         tables_dict[device_name] = model
 
-    # print("tables_dict: ", tables_dict)
+    print("tables_dict: ", tables_dict)
 
     while 1:
         for device in devices:
-            # print("device ", device)
+            print("device ", device)
             instrument = minimalmodbus.Instrument(com_port, device.get("slave_id"))
             instrument.serial.baudrate = 9600
             instrument.serial.bytesize = 8
@@ -60,7 +60,7 @@ if config is not None:
             number_of_registers = len(register_dict)
 
             previous_data = None
-            # indian_timezone = pytz.timezone('Asia/Kolkata')
+            indian_timezone = pytz.timezone('Asia/Kolkata')
 
             try:
                 session = get_sqlite_session()
@@ -73,7 +73,7 @@ if config is not None:
                     data = instrument.read_register(int(register_key), functioncode=function_code)
                     column_name = register_dict[register_key]
                     setattr(record, column_name, data)
-                    # print(device_name, "\ncol_name:", column_name, getattr(record, column_name))
+                    print(device_name, "\ncol_name:", column_name, getattr(record, column_name))
 
                 session.add(record)
                 session.commit()

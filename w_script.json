@@ -1,14 +1,34 @@
 {
-  "host": "192.168.1.18",
-  "port": 5432,
-  "user": "postgres",
-  "password": "postgres",
-  "database": "test1",
-  "schema": {
-    "id": "INT AUTO_INCREMENT PRIMARY KEY",
-    "timestamp": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-    "reg_no": "INT",
-    "value": "INT"
+  "remote_db_connection": {
+    "host": "192.168.1.18",
+    "port": 5432,
+    "user": "postgres",
+    "password": "postgres",
+    "database": "test1"
   },
-  "device_name": "my_device"
+  "modbus": {
+    "ip_address": "192.168.1.10",
+    "port": "/dev/ttyUSB0"
+  },
+  "devices": [
+    {
+      "edge_device_name": "plc",
+      "slave_id": 3,
+      "register": {
+        "1": "kwh",
+        "5": "voltage",
+        "7": "ampere"
+      }
+    },
+    {
+      "edge_device_name": "energy_meter",
+      "slave_id": 4,
+      "register": {
+        "9": "kwh",
+        "15": "voltage",
+        "5": "ampere"
+      }
+    }
+  ]
 }
+  
