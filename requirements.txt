@@ -1,0 +1,7 @@
+greenlet==3.0.0
+minimalmodbus==2.1.1
+psycopg2==2.9.9
+pyserial==3.5
+pytz==2023.3.post1
+SQLAlchemy==2.0.22
+typing_extensions==4.8.0
