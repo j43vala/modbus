@@ -45,7 +45,11 @@ if devices:
         model = create_dynamic_model(table_name, column_names)
         
         model.__table__.create(sqlite_engine, checkfirst = True)
+        print(f"Table '{table_name}' has been created in SQLite for device '{device_name}'.")
+        
         model.__table__.create(postgres_engine, checkfirst = True)
+        print(f"Table '{table_name}' has been created in PostgreSQL for device '{device_name}'.")
+        
 
         record = model()
 

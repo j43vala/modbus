@@ -1,16 +1,3 @@
-# from sqlalchemy import create_engine
-# from sqlalchemy.orm import Session
-
-# sqlite_engine = create_engine("sqlite:///home/wzero/modbus/mydatabase.db", echo=True) 
-# postgres_engine = create_engine('postgresql://postgres:postgres@192.168.1.18:5432/test1')
-
-# def get_sqlite_session():
-#     return Session(sqlite_engine)
-
-# def get_postgres_session():
-#     return Session(postgres_engine)
-
-
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
 import os
