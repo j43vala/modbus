@@ -12,8 +12,11 @@ def create_dynamic_model(table_name, column_names):
         "id": Column(Integer, primary_key=True, autoincrement=True),
         "timestamp": Column(DateTime, default=datetime.utcnow, nullable=False),
     }
+    for col_name in column_names:
+        class_attributes[col_name] = Column(Float)
+   
     DynamicModel = type(class_name, (Base,), class_attributes)
     # Define columns dynamically based on the input dictionary
-    for col_name in column_names:
-        setattr(DynamicModel, col_name, Column(Float))
+    # for col_name in column_names:
+    #     setattr(DynamicModel, col_name, Column(Float))
     return DynamicModel

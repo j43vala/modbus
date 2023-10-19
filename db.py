@@ -4,6 +4,7 @@ import os
 
 # Define the SQLite database file path
 sqlite_db_path = "/home/wzero/modbus/mydatabase.db"
+# sqlite_db_path = "/home/wzero/Public/modbus/mydatabase.db"
 
 # Create a custom event listener to check if the database file exists
 @event.listens_for(create_engine(f"sqlite:///{sqlite_db_path}", echo=True), 'connect')
