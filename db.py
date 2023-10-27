@@ -16,7 +16,7 @@ def check_sqlite_db_exists(dbapi_connection, connection_record):
 sqlite_engine = create_engine(f"sqlite:///{sqlite_db_path}", echo=True)
 
 # Your PostgreSQL engine creation remains unchanged
-postgres_engine = create_engine('postgresql://postgres:postgres@192.168.1.18:5432/test1')
+# postgres_engine = create_engine('postgresql+psycopg2://postgres:postgres@192.168.1.18:5432/test1')
 
 def get_sqlite_session():
     return Session(sqlite_engine)
