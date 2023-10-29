@@ -1,14 +1,66 @@
 {
-  "host": "192.168.1.18",
-  "port": 5432,
-  "user": "postgres",
-  "password": "postgres",
-  "database": "test1",
-  "schema": {
-    "id": "INT AUTO_INCREMENT PRIMARY KEY",
-    "timestamp": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-    "reg_no": "INT",
-    "value": "INT"
+  "remote_db_connection": {
+    "host": "192.168.1.18",
+    "port": 5432,
+    "user": "postgres",
+    "password": "postgres",
+    "database": "test1"
   },
-  "device_name": "my_device"
+  "modbus": {
+    "port": "/dev/ttyUSB0",
+    "method": "rtu",
+    "parity": "N",
+    "baudrate": 9600,
+    "stopbits": 1,
+    "bytesize": 8
+  },
+  "devices": [
+    {
+      "device_name": "energy_meter",
+      "slave_id": 1,
+      "registers": [
+        {
+          "address": 100,
+          "column_name": "kwh",
+          "type": "float"
+        },
+        {
+          "address": 102,
+          "column_name": "kwh_2",
+          "type": "float"
+        },
+        {
+          "address": 140,
+          "column_name": "voltage",
+          "type": "float"
+        },
+        {
+          "address": 142,
+          "column_name": "ampere",
+          "type": "float"
+        }
+      ]
+    },
+    {
+      "device_name": "plc",
+      "slave_id": 3,
+      "registers": [
+        {
+          "address": 9,
+          "column_name": "kwh",
+          "type": "integer"
+        },
+        {
+          "address": 15,
+          "column_name": "voltage",
+          "type": "float"
+        },
+        {
+          "address": 5,
+          "column_name": "ampere",
+          "type": "float"
+        }
+      ]
+    }
+  ]
 }

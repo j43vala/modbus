@@ -3,7 +3,7 @@ import minimalmodbus
 import time
 
 # Define the COM port (adjust the port name as needed, e.g., 'COM1', 'COM2', etc.)
-com_port = 'COM12'
+com_port = '/dev/ttyUSB0'
 
 # Define the Modbus slave address (typically 1 for the first device)
 slave_address = 1

@@ -10,7 +10,7 @@ venv.bak/
 
 # databases
 *.db
-database/
+# database/
 
 
 # Byte-compiled / optimized / DLL files

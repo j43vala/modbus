@@ -1,178 +1,269 @@
-
 import minimalmodbus
 import time
-from database.models import DataRegister, Base
 from db import get_sqlite_session, sqlite_engine
 from datetime import datetime
-from wzero_script import CustomDeviceTable
-import pytz  # Import the pytz library for time zone conversion
+import pytz
+import json
+import os
+import struct  # Import the struct module for float conversion
+from pymodbus.client import ModbusSerialClient as ModbusClient
+from database.models_1 import create_dynamic_model
 
-# Base.metadata.create_all(sqlite_engine)
-Base.metadata.create_all(sqlite_engine)
+# Initialize the 'config' variable to None
+config = None
 
-# Define the COM port (adjust the port name as needed, e.g., 'COM1', 'COM2', etc.)
-com_port = '/dev/ttyUSB0'
+# Specify the path to the configuration JSON file
+config_file_path = '/home/wzero/modbus/w_script.json'
+# config_file_path = '/home/wzero/Public/modbus/w_script.json'
 
-# Define the Modbus slave address (typically 1 for the first device)
-slave_address = 1
+# Check if the configuration file exists
+if os.path.isfile(config_file_path):
+    # If it exists, open and read the JSON configuration
+    with open(config_file_path, 'r') as config_file:
+        config = json.load(config_file)
+else:
+    print(f"Error: '{config_file_path}' not found")
+    # You may want to handle this situation, such as providing default values or exiting the script.
 
-# Create a Modbus instrument instance for your device
-instrument = minimalmodbus.Instrument(com_port, slave_address)
+# Dictionary to store dynamic tables
+tables_dict = {}
 
-# Set the Modbus serial communication parameters (baudrate, parity, etc.)
-instrument.serial.baudrate = 9600  # Adjust to match your device's settings
-instrument.serial.bytesize = 8
-instrument.serial.parity = minimalmodbus.serial.PARITY_NONE
-instrument.serial.stopbits = 2
+modbus_config = config.get("modbus")
 
-# Define the Modbus function code and register address to read from
-function_code = 3  # Read Holding Registers
-register_addresses = [1, 2, 3, 4, 5, 6, 7]
-
-# Define the number of registers to read
-number_of_registers = len(register_addresses)  # Adjust based on your requirements
-
-# Initialize the previous data
-previous_data = None
-
-# Define the Indian Standard Time (IST) time zone
-indian_timezone = pytz.timezone('Asia/Kolkata')
-
-while True:
-    session = None  # Initialize session outside of the try block
-    try:
-        session = get_sqlite_session()
-        data = instrument.read_registers(register_addresses[0], number_of_registers, functioncode=function_code)
-
-        if data != previous_data:
-            print("Updated data:")
-            for i in range(len(data)):
-                print(i)
-
-                ist_timestamp = datetime.now(indian_timezone)
-
-                custom_device_data = CustomDeviceTable(reg_no=register_addresses[i], value=data[i], timestamp=ist_timestamp)
-                session.add(custom_device_data)
-
-                try:
-                    session.commit()
-                    print("Data written to SQLite")
-                except Exception as e:
-                    print("Data write to SQLite failed:", e)
-
-                print(f"Read data from register {register_addresses[i]}: {data[i]}")
-
-        previous_data = data
-        time.sleep(5)  # Sleep for 5 seconds
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
-    finally:
-        if session is not None:
-            session.close()
+com_port = modbus_config.get("port")
+method = modbus_config.get("method", "rtu")
+parity = modbus_config.get("parity", "N")
+baudrate = modbus_config.get("baudrate", 9600)
+stopbits = modbus_config.get("stopbits", 1)
+bytesize = modbus_config.get("bytesize", 8)
 
 
+client = ModbusClient(method=method, port=com_port, stopbits=stopbits, bytesize=bytesize, parity=parity, baudrate=baudrate)
+
+# Connect to the Modbus server
+client.connect()
+# Check if the configuration is available
+if config is not None:
+    # Get the communication port and device information from the configuration
+    com_port = config["modbus"]["port"]
+    devices = config["devices"]
+
+    hostname = os.uname()[1]
+    
+    # Iterate through devices defined in the configuration
+    for device in devices:
+        device_name = device.get("device_name", "")
+        slave_id = device.get("slave_id", "")
+        table_name = f"{hostname}_{slave_id}_{device_name}"
+        register_list = device.get("registers")
+
+        # Create a list of column names for the dynamic table
+        # column_names = list(register_list.values())  # Use values from the dictionary
+
+        # print(column_names)
+
+        # Create a dynamic SQLAlchemy table model
+        model = create_dynamic_model(table_name, register_list)
+        # Create the physical table in the SQLite database if it doesn't exist
+        model.__table__.create(sqlite_engine, checkfirst=True)
+
+        # Store the model in the dictionary for later use
+        tables_dict[device_name] = model
+
+    # Continuous data acquisition loop
+    while True:
+        for device in devices:
+            # Initialize the Modbus instrument for communication
+            instrument = minimalmodbus.Instrument(com_port, device.get("slave_id"))
+            instrument.serial.baudrate = 9600
+            instrument.serial.bytesize = 8
+            instrument.serial.parity = minimalmodbus.serial.PARITY_NONE
+            instrument.serial.stopbits = 2
+
+            function_code = 3
+            register_list = device.get("registers")  # Use the addresses from the JSON file
+
+            # Open a session to interact with the SQLite database
+            # try:
+            session = get_sqlite_session()
+            device_name = device.get("device_name", "")
+            slave_id = device.get("slave_id", "")
+            model = tables_dict[device_name]
+
+            # Create a new record and populate it with data from Modbus
+            record = model()
+
+            for register in register_list:
+                reg_address = register.get("address")
+                column_name = register.get("column_name")
+                reg_type = register.get("type")
+
+                data = None  # Initialize data variable
 
 
+              
+                if reg_type == "integer":
+                    result = client.read_holding_registers(reg_address, 1, slave=slave_id)
+                    if result.isError():
+                        print(f"Error reading Modbus data: {result}")
+                        continue
+                    else:
+                        data = result.registers[0]
+                    # data = instrument.read_register(reg_address, functioncode=function_code)
+                    print('dataqwerrtuioplkkjhfdsa: ', data)
+                elif reg_type == "float":
+                    # reg_1, reg_2 = client.read_holding_registers(reg_address, 2, slave=slave_id)
+                    result = client.read_holding_registers(reg_address, 2, slave=slave_id)
+                    if result.isError():
+                        print(f"Error reading Modbus data: {result}")
+                        continue
+                    else:
+                        reg_1, reg_2 = result.registers
+                        
+                    # Logic for float conversion
+                    float_value = struct.unpack('<f', struct.pack('<HH', reg_1, reg_2))[0]
+                    print('float_value: ', float_value)
+                    data = float_value
+                else:
+                    print(f"Unsupported reg_type '{reg_type}' for register key {register_key}")
+                
+                if column_name:
+                    setattr(record, column_name, data)
+                else:
+                    print(f"Attribute name is missing in the specification for register key {register_key}")
+                # Add the record to the session and commit it to the database
+                session.add(record)
+            session.commit()
+            time.sleep(1)
+
+            # except Exception as e:
+            #     print(f"An error occurred: {e}")
+
+            # finally:
+            #     if session is not None:
+            #         session.close()
+else:
+    # Handle the situation where the 'config' variable is not defined (e.g., provide default values or exit).
+    pass
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # import minimalmodbus
 # import time
-# from sqlalchemy import create_engine, Column, Integer, String, TIMESTAMP, text
-# from sqlalchemy.ext.declarative import declarative_base
-# from sqlalchemy.orm import sessionmaker
-# from sqlalchemy.exc import SQLAlchemyError
-# from wzero_script import CustomDeviceTable
+# from db import get_sqlite_session, sqlite_engine
 # from datetime import datetime
 # import pytz
-# import sqlite3
+# import json
+# import os
+# import struct
+# from sqlalchemy import create_engine, MetaData, Table, Column, Float
+# from database.models_1 import create_dynamic_model
 
-# # Define the COM port (adjust the port name as needed, e.g., 'COM1', 'COM2', etc.)
-# com_port = '/dev/ttyUSB0'
+# # Initialize the 'config' variable to None
+# config = None
 
-# # Define the Modbus slave address (typically 1 for the first device)
-# slave_address = 1
+# # Specify the path to the configuration JSON file
+# config_file_path = '/home/wzero/modbus/w_script.json'
 
-# # Create a Modbus instrument instance for your device
-# instrument = minimalmodbus.Instrument(com_port, slave_address)
+# # Check if the configuration file exists
+# if os.path.isfile(config_file_path):
+#     # If it exists, open and read the JSON configuration
+#     with open(config_file_path, 'r') as config_file:
+#         config = json.load(config_file)
+# else:
+#     print(f"Error: '{config_file_path}' not found")
+#     # You may want to handle this situation, such as providing default values or exiting the script.
 
-# # Set the Modbus serial communication parameters
-# instrument.serial.baudrate = 9600
-# instrument.serial.bytesize = 8
-# instrument.serial.parity = minimalmodbus.serial.PARITY_NONE
-# instrument.serial.stopbits = 2
+# # Function to create a dynamic SQLAlchemy table model
+# def create_dynamic_model(table_name, column_names):
+#     metadata = MetaData()
+#     dynamic_table = Table(table_name, metadata)
 
-# # Define the Modbus function code and register address to read from
-# function_code = 3
-# register_addresses = [1, 2, 3, 4, 5, 6, 7]
-# number_of_registers = len(register_addresses)
+#     for col_name in column_names:
+#         dynamic_table.append_column(Column(col_name, Float))
 
-# # Initialize the previous data
-# previous_data = None
+#     return dynamic_table
 
-# # Define the Indian Standard Time (IST) time zone
-# indian_timezone = pytz.timezone('Asia/Kolkata')
+# # Dictionary to store dynamic tables
+# tables_dict = {}
 
-# # SQLite database setup
-# sqlite_conn = sqlite3.connect('mydata.db')
-# sqlite_cursor = sqlite_conn.cursor()
-# sqlite_cursor.execute('''CREATE TABLE IF NOT EXISTS modbus_data (
-#                             id INTEGER PRIMARY KEY AUTOINCREMENT,
-#                             reg_no INTEGER,
-#                             value INTEGER,
-#                             timestamp TIMESTAMP
-#                         )''')
-# sqlite_conn.commit()
+# # Check if the configuration is available
+# if config is not None:
+#     # Get the communication port and device information from the configuration
+#     com_port = config["modbus"]["port"]
+#     devices = config["devices"]
 
-# while True:
-#     try:
-#         # Read data from the Modbus device
-#         data = instrument.read_registers(register_addresses[0], number_of_registers, functioncode=function_code)
+#     # Iterate through devices defined in the configuration
+#     for device in devices:
+#         hostname = os.uname()[1]
+#         device_name = device.get("device_name", "")
+#         slave_id = device.get("slave_id", "")
+#         table_name = f"{hostname}_{slave_id}_{device_name}"
+#         register_dict = device.get("register")
 
-#         # Check if the data has changed
-#         if data != previous_data:
-#             print("Updated data:")
-#             for i in range(len(data)):
-#                 print(f"Read data from register {register_addresses[i]}: {data[i]}")
+#         # Create a list of column names for the dynamic table
+#         column_names = [register_info["name"] for register_info in register_dict.values()]
 
-#                 # Get the current IST timestamp
-#                 ist_timestamp = datetime.now(indian_timezone)
+#         # Create a dynamic SQLAlchemy table model
+#         model = create_dynamic_model(table_name, column_names)
 
-#                 # Insert data into SQLite
-#                 sqlite_cursor.execute('''
-#                     INSERT INTO modbus_data (reg_no, value, timestamp) 
-#                     VALUES (?, ?, ?)
-#                 ''', (register_addresses[i], data[i], ist_timestamp))
-#                 sqlite_conn.commit()
-#                 print("Data written to SQLite")
+#         # Create the physical table in the SQLite database if it doesn't exist
+#         model.create(bind=sqlite_engine, checkfirst=True)
 
-#                 # Transfer data to PostgreSQL
-#                 engine = create_engine("postgresql+psycopg2://postgres:postgres@192.168.1.18:5432/test1")
-#                 Session = sessionmaker(bind=engine)
-#                 session = Session()
+#         # Store the model in the dictionary for later use
+#         tables_dict[device_name] = model
 
-#                 try:
-#                     custom_device_data = CustomDeviceTable(reg_no=register_addresses[i], value=data[i], timestamp=ist_timestamp)
-#                     session.add(custom_device_data)
-#                     session.commit()
-#                     print("Data written to PostgreSQL")
-#                 except SQLAlchemyError as e:
-#                     print(f"Data write to PostgreSQL failed: {e}")
-#                     session.rollback()
-#                 finally:
+#     # Continuous data acquisition loop
+#     while 1:
+#         for device in devices:
+#             # Initialize the Modbus instrument for communication
+#             instrument = minimalmodbus.Instrument(com_port, device.get("slave_id"))
+#             instrument.serial.baudrate = 9600
+#             instrument.serial.bytesize = 8
+#             instrument.serial.parity = minimalmodbus.serial.PARITY_NONE
+#             instrument.serial.stopbits = 2
+
+#             function_code = 3
+#             register_dict = device.get("register")  # Use the addresses from the JSON file
+#             number_of_registers = len(register_dict)
+
+#             previous_data = None
+
+#             # Open a session to interact with the SQLite database
+#             try:
+#                 session = get_sqlite_session()
+#                 device_name = device.get("device_name", "")
+#                 slave_id = device.get("slave_id", "")
+#                 model = tables_dict[device_name]
+
+#                 # Create a new record and populate it with data from Modbus
+#                 record = model()
+#                 for register_key, register_info in register_dict.items():
+#                     reg_type = register_info.get("type", "integer")
+
+#                     if reg_type == "integer":
+#                         data = instrument.read_register(reg_address, functioncode=function_code)
+#                     elif reg_type == "float":
+#                         reg_1, reg_2 = instrument.read_registers(reg_address, number_of_registers=2, functioncode=function_code)
+#                         # Logic for float conversion
+#                         float_value = struct.unpack('<f', struct.pack('<HH', reg_1, reg_2))[0]
+
+#                         data = float_value
+
+#                     column_name = register_info.get("name", "")
+#                     setattr(record, column_name, data)
+
+#                 # Add the record to the session and commit it to the database
+#                 session.add(record)
+#                 session.commit()
+#                 time.sleep(1)
+
+#             except Exception as e:
+#                 print(f"An error occurred: {e}")
+
+#             finally:
+#                 if session is not None:
 #                     session.close()
-
-#         # Update the previous data
-#         previous_data = data
-
-#         # Wait for 5 seconds before reading again
-#         time.sleep(5)
-#     except Exception as e:
-#         print(f"An error occurred: {e}")
-
-#     finally:
-#         # Close the serial connection
-#         instrument.serial.close()
-
-# # Close the SQLite connection
-# sqlite_conn.close()
+# else:
+#     # Handle the situation where the 'config' variable is not defined (e.g., provide default values or exit).
+#     pass

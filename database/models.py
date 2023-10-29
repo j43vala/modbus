@@ -33,3 +33,4 @@ class DataRegister(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
     reg_no = Column(Integer)
     value = Column(Integer)
+
