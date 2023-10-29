@@ -14,6 +14,7 @@ config = None
 
 # Specify the path to the configuration JSON file
 config_file_path = '/home/wzero/modbus/w_script.json'
+# config_file_path = '/home/wzero/Public/modbus/w_script.json'
 
 # Check if the configuration file exists
 if os.path.isfile(config_file_path):
