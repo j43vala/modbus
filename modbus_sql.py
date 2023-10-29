@@ -1,4 +1,3 @@
-import minimalmodbus
 import time
 from db import get_sqlite_session, sqlite_engine
 from datetime import datetime
@@ -73,13 +72,7 @@ if config is not None:
     # Continuous data acquisition loop
     while True:
         for device in devices:
-            # Initialize the Modbus instrument for communication
-            instrument = minimalmodbus.Instrument(com_port, device.get("slave_id"))
-            instrument.serial.baudrate = 9600
-            instrument.serial.bytesize = 8
-            instrument.serial.parity = minimalmodbus.serial.PARITY_NONE
-            instrument.serial.stopbits = 2
-
+            
             function_code = 3
             register_list = device.get("registers")  # Use the addresses from the JSON file
 
