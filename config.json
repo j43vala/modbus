@@ -20,13 +20,13 @@
       "slave_id": 1,
       "registers": [
         {
-          "address": 100,
-          "column_name": "kwh",
+          "address": 156,
+          "column_name": "frq",
           "type": "float"
         },
         {
-          "address": 102,
-          "column_name": "kwh_2",
+          "address": 148,
+          "column_name": "avg_curr",
           "type": "float"
         },
         {
@@ -47,17 +47,17 @@
       "registers": [
         {
           "address": 9,
-          "column_name": "kwh",
+          "column_name": "random_1",
           "type": "integer"
         },
         {
           "address": 15,
-          "column_name": "voltage",
+          "column_name": "random_2",
           "type": "float"
         },
         {
-          "address": 5,
-          "column_name": "ampere",
+          "address": 100,
+          "column_name": "random_3",
           "type": "float"
         }
       ]
