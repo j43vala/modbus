@@ -12,8 +12,10 @@ from database.models_1 import create_dynamic_model
 config = None
 
 # Specify the path to the configuration JSON file
-config_file_path = '/home/wzero/modbus/w_script.json'
-# config_file_path = '/home/wzero/Public/modbus/w_script.json'
+script_path = os.path.abspath(__file__)
+dir_path = os.path.dirname(script_path)
+
+config_file_path = os.path.join(dir_path, "config.json")
 
 # Check if the configuration file exists
 if os.path.isfile(config_file_path):
@@ -52,8 +54,10 @@ if config is not None:
     # Iterate through devices defined in the configuration
     for device in devices:
         device_name = device.get("device_name", "")
+        print("\ndevice_name : ", device_name)
         slave_id = device.get("slave_id", "")
         table_name = f"{hostname}_{slave_id}_{device_name}"
+        print("table_name : ", table_name)
         register_list = device.get("registers")
 
         # Create a list of column names for the dynamic table
@@ -80,6 +84,7 @@ if config is not None:
             # try:
             session = get_sqlite_session()
             device_name = device.get("device_name", "")
+            print("\ndevice_name : ", device_name)
             slave_id = device.get("slave_id", "")
             model = tables_dict[device_name]
 
@@ -103,7 +108,7 @@ if config is not None:
                     else:
                         data = result.registers[0]
                     # data = instrument.read_register(reg_address, functioncode=function_code)
-                    print('dataqwerrtuioplkkjhfdsa: ', data)
+                    print('integer > ', reg_address, ":", data)
                 elif reg_type == "float":
                     # reg_1, reg_2 = client.read_holding_registers(reg_address, 2, slave=slave_id)
                     result = client.read_holding_registers(reg_address, 2, slave=slave_id)
@@ -115,15 +120,15 @@ if config is not None:
                         
                     # Logic for float conversion
                     float_value = struct.unpack('<f', struct.pack('<HH', reg_1, reg_2))[0]
-                    print('float_value: ', float_value)
+                    print('float > ', reg_address, ":", float_value)
                     data = float_value
                 else:
-                    print(f"Unsupported reg_type '{reg_type}' for register key {register_key}")
+                    print(f"Unsupported reg_type '{reg_type}' for register {reg_address}")
                 
                 if column_name:
                     setattr(record, column_name, data)
                 else:
-                    print(f"Attribute name is missing in the specification for register key {register_key}")
+                    print(f"Attribute name is missing in the specification for register {column_name}")
                 # Add the record to the session and commit it to the database
                 session.add(record)
             session.commit()
