@@ -11,6 +11,7 @@ with open(config_file_path, 'r') as config_file:
     config = json.load(config_file)
 
 # Get the hostname
+
 hostname = os.uname()[1]
 
 devices = config.get("devices", [])
