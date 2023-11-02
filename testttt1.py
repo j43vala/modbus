@@ -1,6 +1,8 @@
 import struct
 import minimalmodbus
-def get_float(reg1 =  63317,reg2 = 17266):
+# def get_float(reg1 =  63317,reg2 = 17266):
+def get_double(reg1 =  63317,reg2 = 17266):
+
     # 01000001 10100100 10011111 10111110 
     # 20.578
 
@@ -8,8 +10,8 @@ def get_float(reg1 =  63317,reg2 = 17266):
 
     # print(combined_value)
 
-    float_value = struct.unpack('<f', struct.pack('<I', combined_value))[0]
-
+    # float_value = struct.unpack('<f', struct.pack('<I', combined_value))[0]
+    double_value = struct.unpack('<l', struct.pack('<HH', reg1, reg2))[0]
     # print(struct.unpack('<f', struct.pack('<I', combined_value)))
     # print(float_value)
 
@@ -21,7 +23,8 @@ def get_float(reg1 =  63317,reg2 = 17266):
     # f2 = bitstring.BitArray(float=float_value, length=32)
     # print(f1.bin)
     # print(f2.bin)
-    return float_value
+    # return float_value
+    return double_value
 
 # def read_modbusdata(reg, number_of_reg = 1):
 
@@ -155,4 +158,5 @@ if __name__ == "__main__":
 
     if data is not None:
         print(f"Data read from Modbus: {data}")
-    print(get_float())
+    # print(get_float())
+    print(get_double())

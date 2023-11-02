@@ -111,6 +111,20 @@ if config is not None:
                         data = result.registers[0]
                     # data = instrument.read_register(reg_address, functioncode=function_code)
                     print('dataqwerrtuioplkkjhfdsa: ', data)
+
+                if reg_type == "double":
+                    result = client.read_holding_registers(reg_address, 2, slave=slave_id)
+                    if result.isError():
+                        print(f"Error reading Modbus data: {result}")
+                        continue
+                    else:
+                        reg_1, reg_2 = result.registers
+
+                    # Logic for double conversion
+                    double_value = struct.unpack('<d', struct.pack('<HH', reg_1, reg_2))[0]
+                    print('double_value: ', double_value)
+                    data = double_value
+
                 elif reg_type == "float":
                     # reg_1, reg_2 = client.read_holding_registers(reg_address, 2, slave=slave_id)
                     result = client.read_holding_registers(reg_address, 2, slave=slave_id)
@@ -125,12 +139,12 @@ if config is not None:
                     print('float_value: ', float_value)
                     data = float_value
                 else:
-                    print(f"Unsupported reg_type '{reg_type}' for register key {register_key}")
+                    print(f"Unsupported reg_type '{reg_type}' for register key {reg_address}")
                 
                 if column_name:
                     setattr(record, column_name, data)
                 else:
-                    print(f"Attribute name is missing in the specification for register key {register_key}")
+                    print(f"Attribute name is missing in the specification for register key {reg_address}")
                 # Add the record to the session and commit it to the database
                 session.add(record)
             session.commit()

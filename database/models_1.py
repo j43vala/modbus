@@ -49,6 +49,8 @@ def create_dynamic_model(table_name, column_specifications):
 
             if col_type == "integer":
                 col_class = Integer
+            elif col_type == "double":
+                col_class =Double
             elif col_type == "float":
                 col_class = Float
             else:
