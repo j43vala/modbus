@@ -1,0 +1,13 @@
+ [Unit]
+    Description=sqlite to postgres
+    After=network.target
+
+    [Service]
+    Type=simple
+    User=wzero
+    WorkingDirectory=/home/wzero/modbus_to_db
+    ExecStart=/home/wzero/modbus_to_db/env/bin/python3 /home/wzero/modbus_to_db/postgres_receive.py
+    Restart=always
+
+    [Install]
+    WantedBy=multi-user.target
