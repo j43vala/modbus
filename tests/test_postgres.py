@@ -163,7 +163,11 @@ print("PostgresSQL database connected successfully")
 interval = 0.5
 
 # Define the data retention period in minutes
-data_retention_period_minutes = 1
+data_retention_period_minutes = 5
+data_delete_frequency_minutes = 1
+
+non_written_data_retention_period_days = 15
+non_written_data_delete_frequency_days = 1
 
 # Check if the 'config' variable is defined
 if config is not None:
@@ -194,10 +198,10 @@ if config is not None:
         device_name = device.get("edge_device_name", "")
         slave_id = device.get("slave_id", "")
         table_name = f"{hostname}_{slave_id}_{device_name}"
-        column_names = list(device["register"].values())
+        register_list = device.get("registers")
 
         # Create a dynamic database model for the device data
-        model = create_dynamic_model(table_name, column_names)
+        model = create_dynamic_model(table_name, register_list)
         model.__table__.create(PostgresSQL_engine, checkfirst=True)
 
         device_models[device_name] = model
@@ -256,7 +260,7 @@ if config is not None:
                         # Delete data older than data_retention_period_minutes
                         current_time = datetime.utcnow()
                         data_retention_period = current_time - timedelta(minutes=data_retention_period_minutes)
-                        data_delete_frequency = current_time - timedelta(minutes=5)
+                        data_delete_frequency = current_time - timedelta(minutes=data_delete_frequency_minutes)
 
                         if data_delete_frequency > last_sync_index_record.last_deleted_at:
                             all_delete_data = sqlite_session.query(model).filter(model.timestamp < data_retention_period).all()
@@ -270,6 +274,18 @@ if config is not None:
 
                     time.sleep(interval)
             except KeyboardInterrupt:
+                current_time = datetime.utcnow()
+                data_retention_period = current_time - timedelta(days=non_written_data_retention_period_days)
+                data_delete_frequency = current_time - timedelta(days=non_written_data_delete_frequency_minutes)
+
+                if data_delete_frequency > last_sync_index_record.last_deleted_at:
+                    all_delete_data = sqlite_session.query(model).filter(model.timestamp < data_retention_period).all()
+
+                    for del_data in all_delete_data:
+                        sqlite_session.delete(del_data)
+
+                    last_sync_index_record.last_deleted_at = current_time  # Update the last_deleted_at timestamp
+                    sqlite_session.commit()
                 # Close database sessions on keyboard interrupt
                 sqlite_session.close()
                 PostgresSQL_session.close()

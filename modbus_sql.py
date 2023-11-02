@@ -97,11 +97,9 @@ if config is not None:
                 reg_type = register.get("type")
 
                 data = None  # Initialize data variable
-
-
-              
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------------
                 if reg_type == "integer":
-                    result = client.read_holding_registers(reg_address, 1, slave=slave_id)
+                    result = client.read_holding_registers(reg_address, 2, slave=slave_id)
                     if result.isError():
                         print(f"Error reading Modbus data: {result}")
                         continue
@@ -109,6 +107,52 @@ if config is not None:
                         data = result.registers[0]
                     # data = instrument.read_register(reg_address, functioncode=function_code)
                     print('integer > ', reg_address, ":", data)
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                elif reg_type == "double":
+                    result = client.read_holding_registers(reg_address, 2, slave=slave_id)
+                    if result.isError():
+                        print(f"Error reading Modbus data: {result}")
+                        continue
+                    else:
+                        reg_1, reg_2 = result.registers
+                        reg_1 = reg_1 if reg_1 <= 0x7FFF else reg_1 - 0x10000
+                        reg_2 = reg_2 if reg_2 <= 0x7FFF else reg_2 - 0x10000
+                        # print('reg_1: ', reg_1)
+                        # print('reg_2: ', reg_2)
+                    
+                    #Logic for double conversion 
+                    combined_value = (reg_1 << 16) | (reg_2 & 0xFFFF)
+                    print('combined_value: ', combined_value)
+                    data = combined_value
+
+                    # convert to a 32 bit signed integer
+                    int32 = data & 0x7FFFFFFF
+                    # print("data without sign :", data)
+                    # print("data without sign :", bin(data))
+                    if ( data >> 31) == 1:
+                         data = -int32
+                    # print("data with sign :", data)
+                    # print("data with sign :", bin(data))
+
+                    # Now, you can add the 'data' to the database
+                    if column_name:
+                        setattr(record, column_name, data)
+                        
+                        # Assuming you have a SQLAlchemy session
+                        session.add(record)
+                        session.commit()
+                    else:
+                        print(f"Attribute name is missing in the specification for register {column_name}")
+                    # print('combined_value: ', combined_value)
+                    # if combined_value & 0x80000000:
+                    #     combined_value -= 0X100000000
+                    # conver combined integer to double
+                    # double_value =  struct.unpack('<d', struct.pack('<Q', combined_value))[0]
+                    # print('combined_value: ', combined_value)
+                    # # Logic for double conversion
+                    # double_value = struct.unpack('<d', struct.pack('<HH', reg_1, reg_2))[0]
+                    # print('double > ', reg_address, ":" ,double_value)
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------------
                 elif reg_type == "float":
                     # reg_1, reg_2 = client.read_holding_registers(reg_address, 2, slave=slave_id)
                     result = client.read_holding_registers(reg_address, 2, slave=slave_id)

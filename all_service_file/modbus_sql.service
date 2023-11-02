@@ -1,0 +1,13 @@
+[Unit]
+Description=modbus to sqlite
+After=network.target
+
+[Service]
+Type=simple
+User=wzero
+WorkingDirectory=/home/wzero/modbus_to_db
+ExecStart=/home/wzero/modbus_to_db/modbus_sql.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

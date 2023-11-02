@@ -20,23 +20,58 @@
       "slave_id": 1,
       "registers": [
         {
-          "address": 156,
-          "column_name": "frq",
+          "address": 100,
+          "column_name": "Watts_Total",
           "type": "float"
         },
         {
-          "address": 148,
-          "column_name": "avg_curr",
+          "address": 116,
+          "column_name": "PF_Ave(instantaneous)",
+          "type": "float"
+        },
+        {
+          "address": 124,
+          "column_name": "VA_total",
           "type": "float"
         },
         {
           "address": 140,
-          "column_name": "voltage",
+          "column_name": "VLN_ave",
           "type": "float"
         },
         {
-          "address": 142,
-          "column_name": "ampere",
+          "address": 156,
+          "column_name": "Frequency",
+          "type": "float"
+        },
+        {
+          "address": 158,
+          "column_name": "Wh_received",
+          "type": "float"
+        },
+        {
+          "address": 160,
+          "column_name": "VAh_received",
+          "type": "float"
+        },
+        {
+          "address": 214,
+          "column_name": "RPM",
+          "type": "float"
+        },
+        {
+          "address": 216,
+          "column_name": "Load_hours_Received",
+          "type": "float"
+        },
+        {
+          "address": 228,
+          "column_name": "On_hours",
+          "type": "float"
+        },
+        {
+          "address": 350,
+          "column_name": "Co2",
           "type": "float"
         }
       ]
@@ -46,19 +81,19 @@
       "slave_id": 3,
       "registers": [
         {
-          "address": 9,
+          "address": 396,
           "column_name": "random_1",
-          "type": "integer"
+          "type": "double"
         },
         {
-          "address": 15,
+          "address": 400,
           "column_name": "random_2",
-          "type": "float"
+          "type": "double"
         },
         {
-          "address": 100,
+          "address": 404,
           "column_name": "random_3",
-          "type": "float"
+          "type": "double"
         }
       ]
     }

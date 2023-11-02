@@ -18,7 +18,7 @@
 #         setattr(DynamicModel, col_name, Column(Float))
 #     return DynamicModel
 
-from sqlalchemy import create_engine, Table, Column, Integer, String, Float, text, DateTime
+from sqlalchemy import create_engine, Table, Column, Integer, String, Float, text, DateTime, Double
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
@@ -49,6 +49,8 @@ def create_dynamic_model(table_name, column_specifications):
 
             if col_type == "integer":
                 col_class = Integer
+            elif col_type == "double":
+                col_class = Double
             elif col_type == "float":
                 col_class = Float
             else:
