@@ -279,10 +279,11 @@ if config is not None:
 
         # Create a dynamic database model for the device data
         model = create_dynamic_model(table_name, register_list)
-        try:
-            model.__table__.create(PostgresSQL_engine, checkfirst=True)
-        except OperationalError:
-            print("We're trying to connect with the database")
+        while True:
+            try:
+                model.__table__.create(PostgresSQL_engine, checkfirst=True)
+            except OperationalError:
+                print("We're trying to connect with the database")
 
         device_models[device_name] = model
 
