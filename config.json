@@ -14,6 +14,11 @@
     "stopbits": 1,
     "bytesize": 8
   },
+  "mqtt":{
+    "broker_host": "192.168.1.10",
+    "broker_port": 1883,
+    "topic": "plc_reg_data"
+  },
   "devices": [
     {
       "device_name": "plc",
